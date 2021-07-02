@@ -2,7 +2,7 @@ import AlgoliaSDK from "@6thstreetdotcom/algolia-sdk";
 import { createQuerySuggestionsPlugin } from "@algolia/autocomplete-plugin-query-suggestions";
 import { createLocalStorageRecentSearchesPlugin } from "@algolia/autocomplete-plugin-recent-searches";
 import algoliasearch from "algoliasearch/lite";
-import queryString from "query-string";
+import { queryString } from "../utils/utils";
 
 const APPLICATION_ID = "testingYRFDV96GMU";
 const API_KEY = "e92425b71fb8567025fd735b21be56e1";
@@ -81,7 +81,7 @@ export const algoliaSDK = {
       locale: "en-ae",
     };
     const tag = ["mobile", "PLP"];
-    const url = queryString.parse(queryParams);
+    const url = queryString(queryParams);
 
     const res = await AlgoliaSDK.getPLP(`/?${url}`, options, tag);
 

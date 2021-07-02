@@ -1,10 +1,16 @@
+import { createAutocomplete } from "@algolia/autocomplete-core";
 import "@algolia/autocomplete-theme-classic";
 import React from "react";
 import { Form } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { ClearIcon } from "../components/ClearIcon";
 import { SearchIcon } from "../components/SearchIcon";
-import { getSuggestions, sourceIndexName } from "../lib/Algolia";
+import {
+  getSuggestions,
+  querySuggestionsPlugin,
+  recentSearchesPlugin,
+  sourceIndexName,
+} from "../lib/Algolia";
 import { toKebabCase } from "../utils/utils";
 
 const genders = {
@@ -30,30 +36,40 @@ export default class Home extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
+      autocompleteState: {},
       query: "",
       hits: [],
-      recentSearches: [], // todo
-      topSearches: [], // todo
+      recentSearches: [],
+      topSearches: [],
       selectedGender: "women",
       showSuggestion: false,
     };
-    this.inputRef = React.createRef();
+
+    this.autocomplete = createAutocomplete({
+      onStateChange: this.onChange,
+      plugins: [querySuggestionsPlugin(), recentSearchesPlugin()],
+      ...this.props,
+    });
+
+    this.inputRef = React.createRef(null);
+    this.formRef = React.createRef(null);
+    this.panelRef = React.createRef(null);
   }
 
-  onTextChange = async () => {
-    console.log("query", this.inputRef.current.value);
-    const { selectedGender } = this.state;
+  onChange = async ({ state }) => {
+    const { autocompleteState, selectedGender, showSuggestion } = this.state;
     const defaultHit = {
-      query: this.inputRef.current.value,
+      query: state.query,
       count: "-",
     };
-
+    this.setState({
+      autocompleteState: state,
+      query: state.query,
+    });
     const hits = await getSuggestions(
       selectedGender === "all"
-        ? this.inputRef.current.value
-        : `${genders[this.state.selectedGender].value} ${
-            this.inputRef.current.value
-          }`
+        ? state.query
+        : `${genders[this.state.selectedGender].value} ${state.query}`
     );
     const newHits = hits?.length ? this.createSuggestions(hits) : [defaultHit];
 
@@ -199,23 +215,23 @@ export default class Home extends React.PureComponent {
           });
         }
       });
-      subCategory.forEach((item) => {
+      subCategory.forEach((ele) => {
         if (
-          this.checkForValidSuggestion(item.value.replaceAll("/// ", ""), [
+          this.checkForValidSuggestion(ele.value.replaceAll("/// ", ""), [
             ...resArray,
             ...arr,
           ])
         ) {
-          let val = item.value.split(" /// ").reverse();
+          let val = ele.value.split(" /// ").reverse();
           arr.push({
             query: val.join(" "),
             filter: [
               {
                 type: "category_level2",
-                value: item.value,
+                value: ele.value,
               },
             ],
-            count: item.count,
+            count: ele.count,
           });
         }
       });
@@ -340,13 +356,44 @@ export default class Home extends React.PureComponent {
   }
 
   componentDidMount() {
-    //
+    const { getEnvironmentProps } = this.autocomplete;
+    if (
+      !this.formRef.current ||
+      !this.panelRef.current ||
+      !this.inputRef.current
+    ) {
+      return undefined;
+    }
+    const { onTouchStart, onTouchMove } = getEnvironmentProps({
+      formElement: this.formRef.current,
+      inputElement: this.inputRef.current,
+      panelElement: this.panelRef.current,
+    });
+
+    window.addEventListener("touchstart", onTouchStart);
+    window.addEventListener("touchmove", onTouchMove);
+
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevState.selectedGender !== this.state.selectedGender &&
+      (this.state.query || this.state.hits.length)
+    ) {
+      this.onChangeText(this.state.query);
+    }
   }
 
   render() {
-    const { selectedGender, hits, showSuggestion, query } = this.state;
+    const { autocompleteState, selectedGender, hits, showSuggestion, query } =
+      this.state;
+    console.log("showSuggestion", showSuggestion);
     return (
-      <div className="aa-Autocomplete">
+      <div className="aa-Autocomplete" {...this.autocomplete.getRootProps({})}>
         {Object.values(genders).map(({ label, value }) => (
           <Form.Check
             key={Math.random()}
@@ -360,9 +407,18 @@ export default class Home extends React.PureComponent {
           />
         ))}
         {/* render field */}
-        <form className="aa-Form">
+        <form
+          ref={this.formRef}
+          className="aa-Form"
+          {...this.autocomplete.getFormProps({
+            inputElement: this.inputRef.current,
+          })}
+        >
           <div className="aa-InputWrapperPrefix">
-            <label className="aa-Label">
+            <label
+              className="aa-Label"
+              {...this.autocomplete.getLabelProps({})}
+            >
               <button className="aa-SubmitButton" type="submit" title="Submit">
                 <SearchIcon />
               </button>
@@ -370,9 +426,11 @@ export default class Home extends React.PureComponent {
           </div>
           <div className="aa-InputWrapper">
             <input
-              ref={this.inputRef}
               className="aa-Input"
-              onChange={() => this.onTextChange()}
+              ref={this.inputRef}
+              {...this.autocomplete.getInputProps({
+                inputElement: this.inputRef.current,
+              })}
               onFocus={() => this.setState({ showSuggestion: true })}
               onBlur={() => this.setState({ showSuggestion: false })}
             />
