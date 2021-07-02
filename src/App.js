@@ -1,10 +1,11 @@
 import React from "react";
+import { withRouter } from "react-router";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import { algoliaSDK } from "./lib/Algolia";
 import Home from "./pages/home";
 import PLP from "./pages/plp";
 
-export default class App extends React.Component {
+class App extends React.Component {
   componentDidMount() {
     algoliaSDK.setIndex();
   }
@@ -18,12 +19,11 @@ export default class App extends React.Component {
             <Route path="/plp">
               <PLP />
             </Route>
-            <Route path="/">
-              <Home />
-            </Route>
+            <Route path="/" render={(props) => <Home {...props} />} />
           </Switch>
         </div>
       </Router>
     );
   }
 }
+export default withRouter(App);

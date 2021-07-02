@@ -1,8 +1,13 @@
 import React from "react";
 import { Form, FormControl, InputGroup } from "react-bootstrap";
-import { Link } from "react-router-dom";
 import { SearchIcon } from "../components/SearchIcon";
-import { getSuggestions, sourceIndexName } from "../lib/Algolia";
+import {
+  getRecentSearches,
+  getSuggestions,
+  getTopSearches,
+  setRecentSearches,
+  sourceIndexName,
+} from "../lib/Algolia";
 import { toKebabCase } from "../utils/utils";
 
 const genders = {
@@ -38,36 +43,7 @@ export default class Home extends React.PureComponent {
     this.inputRef = React.createRef();
   }
 
-  onTextChange = async () => {
-    console.log("query", this.inputRef.current.value);
-    const { selectedGender } = this.state;
-    const defaultHit = {
-      query: this.inputRef.current.value,
-      count: "-",
-    };
-
-    const hits = await getSuggestions(
-      selectedGender === "all"
-        ? this.inputRef.current.value
-        : `${genders[this.state.selectedGender].value} ${
-            this.inputRef.current.value
-          }`
-    );
-    const newHits = hits?.length ? this.createSuggestions(hits) : [defaultHit];
-
-    this.setState(
-      {
-        // value,
-        hits: newHits || [],
-        // loading: false
-      }
-      // () => console.log(this.state.hits)
-    );
-  };
-
-  onGenderSelect = (value) => {
-    this.setState({ selectedGender: value });
-  };
+  // utils
 
   createSuggestions = (hits) => {
     let arr = [];
@@ -337,8 +313,96 @@ export default class Home extends React.PureComponent {
     );
   }
 
+  fetchTopSearches = async () => {
+    const topSearches = await getTopSearches();
+    this.setState({
+      topSearches: topSearches?.filter((ele) => ele !== "") || [],
+    });
+  };
+
+  fetchRecentSearches = async () => {
+    const recentSearches = await getRecentSearches("users1");
+    this.setState({
+      recentSearches: recentSearches || [],
+    });
+  };
+
+  // functions
+
+  onTextChange = async () => {
+    console.log("query", this.inputRef.current.value);
+    const { selectedGender } = this.state;
+    const defaultHit = {
+      query: this.inputRef.current.value,
+      count: "-",
+    };
+
+    const hits = await getSuggestions(
+      selectedGender === "all"
+        ? this.inputRef.current.value
+        : `${genders[this.state.selectedGender].value} ${
+            this.inputRef.current.value
+          }`
+    );
+    const newHits = hits?.length ? this.createSuggestions(hits) : [defaultHit];
+
+    this.setState(
+      {
+        query: this.inputRef.current.value,
+        hits: newHits || [],
+        // loading: false
+      }
+      // () => console.log(this.state.hits)
+    );
+  };
+
+  onGenderSelect = (value) => {
+    this.setState({ selectedGender: value });
+  };
+
+  onSuggestionClick = ({ query, filter, ...rest }) => {
+    let params = {
+      q: query,
+    };
+
+    if (filter) {
+      filter.forEach(({ type, value }) => {
+        if (type === "brand") {
+          params = { ...params, brand_name: value };
+        } else if (type === "category_level1") {
+          params = { ...params, "categories.level1": value };
+        } else if (type === "category_level2") {
+          params = { ...params, "categories.level2": value };
+        }
+      });
+    }
+    if (this.state.selectedGender !== "all") {
+      params = { ...params, "categories.level0": this.state.selectedGender };
+    }
+    console.log(toKebabCase(this.formatQuery(query)));
+    console.log("params", params);
+    // this.props.navigation.navigate("PLP", {
+    //   params,
+    //   title: query,
+    // });
+    console.log("props", this.props);
+    this.props.history.push({
+      pathname: `/plp/?q=${JSON.stringify({ params, title: query })}`,
+    });
+  };
+
+  onSearchSubmit = async (query) => {
+    const recentSearches = await setRecentSearches(query, "users1");
+    this.setState({
+      recentSearches,
+    });
+  };
+
   componentDidMount() {
-    //
+    this.fetchTopSearches();
+    this.fetchRecentSearches();
+    console.log("this.state.topSearches", this.state.topSearches);
+    console.log("this.state.recentSearches", this.state.recentSearches);
   }
 
   render() {
@@ -358,7 +422,10 @@ export default class Home extends React.PureComponent {
           />
         ))}
         {/* render field */}
-        <Form className="d-flex w-100">
+        <Form
+          className="d-flex w-100"
+          onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
+        >
           <InputGroup className="mb-3">
             <FormControl
               placeholder="Search"
@@ -368,7 +435,7 @@ export default class Home extends React.PureComponent {
               className=""
               onChange={() => this.onTextChange()}
               onFocus={() => this.setState({ showSuggestion: true })}
-              onBlur={() => this.setState({ showSuggestion: false })}
+              // onBlur={() => this.setState({ showSuggestion: false })}
             />
             <InputGroup.Append>
               <InputGroup.Text id="searchbox">
@@ -392,23 +459,14 @@ export default class Home extends React.PureComponent {
                     {hits.slice(0, 5).map((ele) => {
                       return (
                         <li key={Math.random()} className="aa-Item">
-                          <div className="aa-ItemWrapper">
-                            <div className="aa-ItemContent">
-                              <div className="aa-ItemContentBody">
-                                <div className="aa-ItemContentTitle">
-                                  <Link
-                                    to={`/plp?q=${toKebabCase(
-                                      this.formatQuery(ele.query)
-                                    )}`}
-                                  >
-                                    {this.getHighlightedText(
-                                      this.formatQuery(ele.query),
-                                      query
-                                    )}
-                                  </Link>
-                                </div>
-                              </div>
-                            </div>
+                          <div
+                            className="cursor-pointer"
+                            onClick={() => this.onSuggestionClick(ele)}
+                          >
+                            {this.getHighlightedText(
+                              this.formatQuery(ele.query),
+                              query
+                            )}
                           </div>
                         </li>
                       );

@@ -2,6 +2,7 @@ import AlgoliaSDK from "@6thstreetdotcom/algolia-sdk";
 import { createQuerySuggestionsPlugin } from "@algolia/autocomplete-plugin-query-suggestions";
 import { createLocalStorageRecentSearchesPlugin } from "@algolia/autocomplete-plugin-recent-searches";
 import algoliasearch from "algoliasearch/lite";
+import axios from "axios";
 import { queryString } from "../utils/utils";
 
 const APPLICATION_ID = "testingYRFDV96GMU";
@@ -66,6 +67,24 @@ export async function getRecentSearches(userID) {
   }
 }
 
+export async function getTopSearches() {
+  try {
+    const res = await axios.get(
+      `https://analytics.algolia.com/2/searches?index=${sourceIndexName}&limit=5&tags=PWA AND Search`,
+      {
+        headers: {
+          "X-Algolia-API-Key": API_KEY,
+          "X-Algolia-Application-Id": APPLICATION_ID,
+        },
+      }
+    );
+    console.log(res);
+    return res.data.searches;
+  } catch (e) {
+    console.log(e.response);
+  }
+}
+
 export const algoliaSDK = {
   init: (appID, adminKey) => {
     AlgoliaSDK.init(appID, adminKey);
@@ -76,13 +95,15 @@ export const algoliaSDK = {
   },
 
   getPLP: async (params = {}, options = {}) => {
+    console.log("params in get plp", params);
     const queryParams = {
+      query: "nike",
       ...params,
       locale: "en-ae",
     };
-    const tag = ["mobile", "PLP"];
+    const tag = ["PWA", "PLP"];
     const url = queryString(queryParams);
-
+    console.log("url", url);
     const res = await AlgoliaSDK.getPLP(`/?${url}`, options, tag);
 
     return res;

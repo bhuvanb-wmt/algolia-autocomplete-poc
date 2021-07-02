@@ -1,5 +1,4 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import queryString from "query-string";
 import React from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { algoliaSDK } from "../lib/Algolia";
@@ -11,9 +10,12 @@ export default class PLP extends React.PureComponent {
   }
 
   async componentDidMount() {
-    const q = queryString.parse(window.location.search);
+    // const q = queryString.parse(window.location.search);
+    var params = JSON.parse(
+      new URLSearchParams(window.location.search).get("q")
+    );
     try {
-      const res = await algoliaSDK.getPLP(window.location.search);
+      const res = await algoliaSDK.getPLP(params);
       this.setState({
         data: res.data,
       });

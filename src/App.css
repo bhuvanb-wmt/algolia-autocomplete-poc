@@ -72,3 +72,7 @@ ul {
 ul, li {
   list-style-type: none;
 }
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
