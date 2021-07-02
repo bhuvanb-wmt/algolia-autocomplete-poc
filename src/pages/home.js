@@ -364,7 +364,6 @@ export default class Home extends React.PureComponent {
     let params = {
       q: query,
     };
-
     if (filter) {
       filter.forEach(({ type, value }) => {
         if (type === "brand") {
@@ -424,7 +423,7 @@ export default class Home extends React.PureComponent {
         {/* render field */}
         <Form
           className="d-flex w-100"
-          onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
+          // onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
         >
           <InputGroup className="mb-3">
             <FormControl
@@ -462,7 +461,7 @@ export default class Home extends React.PureComponent {
                         <li key={Math.random()} className="aa-Item">
                           <div
                             className="cursor-pointer"
-                            onClick={() => this.onSuggestionClick(ele)}
+                            // onClick={() => this.onSuggestionClick(ele)}
                           >
                             {this.getHighlightedText(
                               this.formatQuery(ele.query),
