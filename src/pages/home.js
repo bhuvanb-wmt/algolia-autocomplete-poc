@@ -1,8 +1,6 @@
-import "@algolia/autocomplete-theme-classic";
 import React from "react";
-import { Form } from "react-bootstrap";
+import { Form, FormControl, InputGroup } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { ClearIcon } from "../components/ClearIcon";
 import { SearchIcon } from "../components/SearchIcon";
 import { getSuggestions, sourceIndexName } from "../lib/Algolia";
 import { toKebabCase } from "../utils/utils";
@@ -346,7 +344,7 @@ export default class Home extends React.PureComponent {
   render() {
     const { selectedGender, hits, showSuggestion, query } = this.state;
     return (
-      <div className="aa-Autocomplete">
+      <div className="">
         {Object.values(genders).map(({ label, value }) => (
           <Form.Check
             key={Math.random()}
@@ -360,35 +358,37 @@ export default class Home extends React.PureComponent {
           />
         ))}
         {/* render field */}
-        <form className="aa-Form">
-          <div className="aa-InputWrapperPrefix">
-            <label className="aa-Label">
-              <button className="aa-SubmitButton" type="submit" title="Submit">
-                <SearchIcon />
-              </button>
-            </label>
-          </div>
-          <div className="aa-InputWrapper">
-            <input
+        <Form className="d-flex w-100">
+          <InputGroup className="mb-3">
+            <FormControl
+              placeholder="Search"
+              aria-label="Search"
+              aria-describedby="searchbox"
               ref={this.inputRef}
-              className="aa-Input"
+              className=""
               onChange={() => this.onTextChange()}
               onFocus={() => this.setState({ showSuggestion: true })}
               onBlur={() => this.setState({ showSuggestion: false })}
             />
-          </div>
-          <div className="aa-InputWrapperSuffix">
-            <button className="aa-ClearButton" title="Clear" type="reset">
-              <ClearIcon />
-            </button>
-          </div>
-        </form>
+            <InputGroup.Append>
+              <InputGroup.Text id="searchbox">
+                <button
+                  className="aa-SubmitButton"
+                  type="submit"
+                  title="Submit"
+                >
+                  <SearchIcon />
+                </button>
+              </InputGroup.Text>
+            </InputGroup.Append>
+          </InputGroup>
+        </Form>
         {showSuggestion && (
           <div>
-            <div className="aa-PanelLayout aa-Panel--scrollable">
-              <section className="aa-Source">
+            <div className="">
+              <section className="">
                 <div>
-                  <ul className="aa-List">
+                  <ul className="">
                     {hits.slice(0, 5).map((ele) => {
                       return (
                         <li key={Math.random()} className="aa-Item">

@@ -65,3 +65,10 @@
 .base-price {
   text-decoration: line-through;
 }
+
+ul {
+  padding-left: 16px;
+}
+ul, li {
+  list-style-type: none;
+}

@@ -2,7 +2,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import queryString from "query-string";
 import React from "react";
 import { Col, Container, Row } from "react-bootstrap";
-import "../App.css";
 import { algoliaSDK } from "../lib/Algolia";
 
 export default class PLP extends React.PureComponent {

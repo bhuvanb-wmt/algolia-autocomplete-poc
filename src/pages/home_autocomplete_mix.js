@@ -1,5 +1,4 @@
 import { createAutocomplete } from "@algolia/autocomplete-core";
-import "@algolia/autocomplete-theme-classic";
 import React from "react";
 import { Form } from "react-bootstrap";
 import { Link } from "react-router-dom";

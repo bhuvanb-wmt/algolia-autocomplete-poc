@@ -1,6 +1,5 @@
 // import { createAutocomplete } from "@algolia/autocomplete-core";
 import { createAutocomplete } from "@algolia/autocomplete-core";
-import "@algolia/autocomplete-theme-classic";
 import React from "react";
 import { Link } from "react-router-dom";
 import { ClearIcon } from "../components/ClearIcon";
