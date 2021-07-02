@@ -11,9 +11,7 @@ export default class PLP extends React.PureComponent {
 
   async componentDidMount() {
     // const q = queryString.parse(window.location.search);
-    var params = JSON.parse(
-      new URLSearchParams(window.location.search).get("q")
-    );
+    var params = new URLSearchParams(window.location.search).get("q");
     try {
       const res = await algoliaSDK.getPLP(params);
       this.setState({

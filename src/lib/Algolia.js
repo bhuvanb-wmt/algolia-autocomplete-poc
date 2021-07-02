@@ -97,7 +97,6 @@ export const algoliaSDK = {
   getPLP: async (params = {}, options = {}) => {
     console.log("params in get plp", params);
     const queryParams = {
-      query: "nike",
       ...params,
       locale: "en-ae",
     };

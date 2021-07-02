@@ -428,6 +428,7 @@ export default class Home extends React.PureComponent {
         >
           <InputGroup className="mb-3">
             <FormControl
+              style={{ height: "44px" }}
               placeholder="Search"
               aria-label="Search"
               aria-describedby="searchbox"
