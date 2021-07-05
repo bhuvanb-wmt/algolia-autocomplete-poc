@@ -11,6 +11,7 @@ const SOURCE_INDEX_API_KEY = "1c1f24f9c49cbf42d872fcf91746fc21";
 export const indexName =
   "enterprise_magento_english_products_query_suggestions";
 export const sourceIndexName = "enterprise_magento_en_kw_products";
+
 const searchClient = algoliasearch(APPLICATION_ID, API_KEY);
 const index = searchClient.initIndex(indexName);
 
@@ -29,12 +30,11 @@ export function querySuggestionsPlugin() {
 }
 
 export async function getSuggestions(query) {
-  console.log("query", query);
   try {
     const res = await index.search(query, {
       hitsPerPage: 5,
     });
-    console.log("result", res);
+    console.log("raw", res.hits);
     return res.hits;
   } catch (e) {
     console.log(e);
@@ -80,7 +80,7 @@ export async function getTopSearches() {
         },
       }
     );
-    console.log("top searches", res);
+    // console.log("top searches", res);
     return res.data.searches;
   } catch (e) {
     console.log(e.response);

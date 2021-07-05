@@ -8,7 +8,6 @@ import {
   setRecentSearches,
   sourceIndexName,
 } from "../lib/Algolia";
-import { toKebabCase } from "../utils/utils";
 
 const genders = {
   all: {
@@ -45,9 +44,24 @@ export default class Home extends React.PureComponent {
 
   // utils
 
+  fetchTopSearches = async () => {
+    const topSearches = await getTopSearches();
+    this.setState({
+      topSearches: topSearches?.filter((ele) => ele !== "") || [],
+    });
+  };
+
+  fetchRecentSearches = async () => {
+    const recentSearches = await getRecentSearches("users1");
+    this.setState({
+      recentSearches: recentSearches || [],
+    });
+  };
+
   createSuggestions = (hits) => {
     let arr = [];
     let i = 0;
+    console.log("hits", hits);
     while (arr.length < 5 && i < hits.length) {
       arr.push(...this.getHits(hits[i], arr));
       i++;
@@ -93,6 +107,7 @@ export default class Home extends React.PureComponent {
       category = categories_level1;
       subCategory = categories_level2;
     }
+    // if query does include brands
     if (hit.query.toUpperCase().includes(brand_name[0].value.toUpperCase())) {
       if (this.checkForValidSuggestion(query, [...resArray, ...arr])) {
         arr.push({
@@ -138,7 +153,7 @@ export default class Home extends React.PureComponent {
         ) {
           let val = ele.value.split(" /// ").reverse();
           arr.push({
-            query: brand_name[0].value + " " + val.join(" "),
+            query: brand_name[0].value + " " + val[0],
             filter: [
               {
                 type: "brand",
@@ -153,7 +168,11 @@ export default class Home extends React.PureComponent {
           });
         }
       });
-    } else {
+    }
+    // if query does not include brands
+    else {
+      console.log("category if not brands", category);
+      console.log("subcategory if not brands", subCategory);
       category.forEach((ele) => {
         if (
           this.checkForValidSuggestion(ele.value.replaceAll("/// ", ""), [
@@ -181,8 +200,9 @@ export default class Home extends React.PureComponent {
           ])
         ) {
           let val = item.value.split(" /// ").reverse();
+          console.log("val", val);
           arr.push({
-            query: val.join(" "),
+            query: val[0],
             filter: [
               {
                 type: "category_level2",
@@ -199,6 +219,8 @@ export default class Home extends React.PureComponent {
           ...arr,
         ])
       ) {
+        console.log("value", brand_name);
+        console.log("query", query);
         arr.push({
           query: brand_name[0].value + " " + query,
           filter: [
@@ -266,7 +288,6 @@ export default class Home extends React.PureComponent {
           .sort()
           .join(" ")
     );
-    // console.log(hit, arr, value);
     if (hit) valid = false;
     return valid;
   };
@@ -313,30 +334,16 @@ export default class Home extends React.PureComponent {
     );
   }
 
-  fetchTopSearches = async () => {
-    const topSearches = await getTopSearches();
-    this.setState({
-      topSearches: topSearches?.filter((ele) => ele !== "") || [],
-    });
-  };
-
-  fetchRecentSearches = async () => {
-    const recentSearches = await getRecentSearches("users1");
-    this.setState({
-      recentSearches: recentSearches || [],
-    });
-  };
-
   // functions
 
   onTextChange = async () => {
-    console.log("query", this.inputRef.current.value);
     const { selectedGender } = this.state;
     const defaultHit = {
       query: this.inputRef.current.value,
       count: "-",
     };
 
+    // const hits = await getSuggestions(this.inputRef.current.value);
     const hits = await getSuggestions(
       selectedGender === "all"
         ? this.inputRef.current.value
@@ -345,7 +352,6 @@ export default class Home extends React.PureComponent {
           }`
     );
     const newHits = hits?.length ? this.createSuggestions(hits) : [defaultHit];
-
     this.setState(
       {
         query: this.inputRef.current.value,
@@ -378,13 +384,10 @@ export default class Home extends React.PureComponent {
     if (this.state.selectedGender !== "all") {
       params = { ...params, "categories.level0": this.state.selectedGender };
     }
-    console.log(toKebabCase(this.formatQuery(query)));
-    console.log("params", params);
     // this.props.navigation.navigate("PLP", {
     //   params,
     //   title: query,
     // });
-    console.log("plp query stirng", { params, title: query });
     this.props.history.push({
       pathname: `/plp/?q=${JSON.stringify({ params, title: query })}`,
     });
@@ -397,11 +400,9 @@ export default class Home extends React.PureComponent {
     });
   };
 
-  componentDidMount() {
-    this.fetchTopSearches();
-    // this.fetchRecentSearches();
-    console.log("this.state.topSearches", this.state.topSearches);
-    console.log("this.state.recentSearches", this.state.recentSearches);
+  async componentDidMount() {
+    await this.fetchRecentSearches();
+    await this.fetchTopSearches();
   }
 
   render() {
@@ -424,7 +425,7 @@ export default class Home extends React.PureComponent {
         {/* render field */}
         <Form
           className="d-flex w-100"
-          onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
+          // onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
         >
           <InputGroup className="mb-3">
             <FormControl
@@ -434,7 +435,7 @@ export default class Home extends React.PureComponent {
               aria-describedby="searchbox"
               ref={this.inputRef}
               className=""
-              onChange={() => this.onTextChange()}
+              onChange={this.onTextChange}
               onFocus={() => this.setState({ showSuggestion: true })}
               // onBlur={() => this.setState({ showSuggestion: false })}
             />
@@ -454,7 +455,7 @@ export default class Home extends React.PureComponent {
         {showSuggestion && (
           <div>
             <div className="">
-              {topSearches.length > 0 ? (
+              {topSearches.length > 0 && !query ? (
                 <section className="top searches">
                   <div>
                     <div>Top Searches</div>
@@ -464,7 +465,7 @@ export default class Home extends React.PureComponent {
                           <li key={Math.random()} className="aa-Item">
                             <div
                               className="px-3 cursor-pointer"
-                              onClick={() => this.onSuggestionClick(ele)}
+                              // onClick={() => this.onSuggestionClick(ele)}
                             >
                               {ele.search ? ele.search : null}
                             </div>
@@ -475,7 +476,7 @@ export default class Home extends React.PureComponent {
                   </div>
                 </section>
               ) : null}
-              {hits.length > 0 ? (
+              {hits.length > 0 && query ? (
                 <section className="">
                   <div>Search Suggestions</div>
                   <div>
@@ -485,7 +486,7 @@ export default class Home extends React.PureComponent {
                           <li key={Math.random()} className="aa-Item">
                             <div
                               className="cursor-pointer"
-                              onClick={() => this.onSuggestionClick(ele)}
+                              // onClick={() => this.onSuggestionClick(ele)}
                             >
                               {this.getHighlightedText(
                                 this.formatQuery(ele.query),
