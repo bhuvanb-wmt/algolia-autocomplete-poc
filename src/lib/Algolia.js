@@ -5,10 +5,12 @@ import algoliasearch from "algoliasearch/lite";
 import axios from "axios";
 import { queryString } from "../utils/utils";
 
-const APPLICATION_ID = "testingYRFDV96GMU";
-const API_KEY = "e92425b71fb8567025fd735b21be56e1";
-export const indexName = "stage_magento_english_products_query_suggestions";
-export const sourceIndexName = "stage_magento_english_products";
+const APPLICATION_ID = "02X7U6O3SI";
+const API_KEY = "1585b8474aaca857f922d1888f76f38e";
+const SOURCE_INDEX_API_KEY = "1c1f24f9c49cbf42d872fcf91746fc21";
+export const indexName =
+  "enterprise_magento_english_products_query_suggestions";
+export const sourceIndexName = "enterprise_magento_en_kw_products";
 const searchClient = algoliasearch(APPLICATION_ID, API_KEY);
 const index = searchClient.initIndex(indexName);
 
@@ -70,15 +72,15 @@ export async function getRecentSearches(userID) {
 export async function getTopSearches() {
   try {
     const res = await axios.get(
-      `https://analytics.algolia.com/2/searches?index=${sourceIndexName}&limit=5&tags=PWA AND Search`,
+      `https://analytics.algolia.com/2/searches?index=${sourceIndexName}&limit=5&tags=PWA_Search`,
       {
         headers: {
-          "X-Algolia-API-Key": API_KEY,
+          "X-Algolia-API-Key": SOURCE_INDEX_API_KEY,
           "X-Algolia-Application-Id": APPLICATION_ID,
         },
       }
     );
-    console.log(res);
+    console.log("top searches", res);
     return res.data.searches;
   } catch (e) {
     console.log(e.response);
@@ -100,10 +102,10 @@ export const algoliaSDK = {
       ...params,
       locale: "en-ae",
     };
-    const tag = ["PWA", "PLP"];
+    // const tag = ["PWA_Search"];
     const url = queryString(queryParams);
     console.log("url", url);
-    const res = await AlgoliaSDK.getPLP(`/?${url}`, options, tag);
+    const res = await AlgoliaSDK.getPLP(`/?${url}`);
 
     return res;
   },
@@ -114,4 +116,4 @@ export const algoliaSDK = {
   getIndex: () => AlgoliaSDK.index,
 };
 
-algoliaSDK.init(APPLICATION_ID, API_KEY);
+algoliaSDK.init(APPLICATION_ID, SOURCE_INDEX_API_KEY);

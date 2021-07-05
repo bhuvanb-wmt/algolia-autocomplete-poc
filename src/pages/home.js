@@ -384,7 +384,7 @@ export default class Home extends React.PureComponent {
     //   params,
     //   title: query,
     // });
-    console.log("props", this.props);
+    console.log("plp query stirng", { params, title: query });
     this.props.history.push({
       pathname: `/plp/?q=${JSON.stringify({ params, title: query })}`,
     });
@@ -399,13 +399,14 @@ export default class Home extends React.PureComponent {
 
   componentDidMount() {
     this.fetchTopSearches();
-    this.fetchRecentSearches();
+    // this.fetchRecentSearches();
     console.log("this.state.topSearches", this.state.topSearches);
     console.log("this.state.recentSearches", this.state.recentSearches);
   }
 
   render() {
-    const { selectedGender, hits, showSuggestion, query } = this.state;
+    const { selectedGender, hits, showSuggestion, query, topSearches } =
+      this.state;
     return (
       <div className="">
         {Object.values(genders).map(({ label, value }) => (
@@ -423,7 +424,7 @@ export default class Home extends React.PureComponent {
         {/* render field */}
         <Form
           className="d-flex w-100"
-          // onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
+          onSubmit={() => this.onSearchSubmit(this.inputRef.value)}
         >
           <InputGroup className="mb-3">
             <FormControl
@@ -453,27 +454,51 @@ export default class Home extends React.PureComponent {
         {showSuggestion && (
           <div>
             <div className="">
-              <section className="">
-                <div>
-                  <ul className="">
-                    {hits.slice(0, 5).map((ele) => {
-                      return (
-                        <li key={Math.random()} className="aa-Item">
-                          <div
-                            className="cursor-pointer"
-                            // onClick={() => this.onSuggestionClick(ele)}
-                          >
-                            {this.getHighlightedText(
-                              this.formatQuery(ele.query),
-                              query
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </section>
+              {topSearches.length > 0 ? (
+                <section className="top searches">
+                  <div>
+                    <div>Top Searches</div>
+                    <ul className="d-flex">
+                      {this.state.topSearches.map((ele) => {
+                        return (
+                          <li key={Math.random()} className="aa-Item">
+                            <div
+                              className="px-3 cursor-pointer"
+                              onClick={() => this.onSuggestionClick(ele)}
+                            >
+                              {ele.search ? ele.search : null}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </section>
+              ) : null}
+              {hits.length > 0 ? (
+                <section className="">
+                  <div>Search Suggestions</div>
+                  <div>
+                    <ul className="">
+                      {hits.slice(0, 5).map((ele) => {
+                        return (
+                          <li key={Math.random()} className="aa-Item">
+                            <div
+                              className="cursor-pointer"
+                              onClick={() => this.onSuggestionClick(ele)}
+                            >
+                              {this.getHighlightedText(
+                                this.formatQuery(ele.query),
+                                query
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </section>
+              ) : null}
             </div>
           </div>
         )}
