@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@6thstreetdotcom/algolia-sdk": "^1.8.3-beta.1",
+    "@6thstreetdotcom/algolia-sdk": "^1.8.3-beta.3",
     "@algolia/autocomplete-js": "^1.1.0",
     "@algolia/autocomplete-plugin-query-suggestions": "^1.1.0",
     "@algolia/autocomplete-plugin-recent-searches": "^1.1.0",

@@ -2,12 +2,14 @@ import React from "react";
 import { Form, FormControl, InputGroup } from "react-bootstrap";
 import { SearchIcon } from "../components/SearchIcon";
 import {
+  algoliaSDK,
   getRecentSearches,
   getSuggestions,
   getTopSearches,
   setRecentSearches,
   sourceIndexName,
 } from "../lib/Algolia";
+import { capitalizeFirstLetters } from "../utils/utils";
 
 const genders = {
   all: {
@@ -47,7 +49,7 @@ export default class Home extends React.PureComponent {
   fetchTopSearches = async () => {
     const topSearches = await getTopSearches();
     this.setState({
-      topSearches: topSearches?.filter((ele) => ele !== "") || [],
+      topSearches: topSearches?.filter((ele) => ele.search !== "") || [],
     });
   };
 
@@ -58,24 +60,67 @@ export default class Home extends React.PureComponent {
     });
   };
 
-  createSuggestions = (hits) => {
+  getCustomQuerySuggestions = (hits, indexName) => {
     let arr = [];
     let i = 0;
-    console.log("hits", hits);
     while (arr.length < 5 && i < hits.length) {
-      arr.push(...this.getHits(hits[i], arr));
+      arr.push(...this.createCustomQuerySuggestions(hits[i], arr, indexName));
       i++;
     }
+    console.log("final array", arr);
     return arr;
   };
 
-  getHits = (hit, resArray) => {
+  addSuggestion = (label, query, filter, count, arr, operation = "push") => {
+    if (operation === "push") {
+      arr.push({
+        label,
+        query,
+        filter,
+        count,
+      });
+    } else if (operation === "unshift") {
+      arr.unshift({
+        label,
+        query,
+        filter,
+        count,
+      });
+    }
+  };
+
+  checkForQueryWithGender = (query) => {
+    const { selectedGender } = this.state;
+    if (selectedGender === "all") return true;
+    let regexStr;
+    switch (selectedGender) {
+      case "women":
+        regexStr = "women";
+        break;
+
+      case "men":
+        regexStr = "men";
+        break;
+
+      case "kids":
+        regexStr = "KIDS|GIRL|BOY|BABY BOY|BABY GIRL";
+        break;
+      default:
+        break;
+    }
+    let regex = new RegExp(`\\b${regexStr}\\b`, "i");
+    return regex.test(query);
+  };
+
+  createCustomQuerySuggestions = (hit, resArray, indexName) => {
     let arr = [];
     let {
       all,
       [this.state.selectedGender]: selectedGender,
       ...filter
     } = genders;
+
+    // actual code
     const {
       query,
       [sourceIndexName]: {
@@ -90,154 +135,220 @@ export default class Home extends React.PureComponent {
         },
       },
     } = hit;
-    let category;
-    let subCategory;
-    if (
-      query.toUpperCase().includes("KIDS") ||
-      query.toUpperCase().includes("GIRL") ||
-      query.toUpperCase().includes("GIRLS") ||
-      query.toUpperCase().includes("BOY") ||
-      query.toUpperCase().includes("BOYS") ||
-      query.toUpperCase().includes("BABY GIRL") ||
-      query.toUpperCase().includes("BABY BOY")
-    ) {
-      category = categories_level2;
-      subCategory = categories_level3;
+    console.log("single hit", hit);
+    let genderModifiedQuery;
+
+    if (this.checkForQueryWithGender(query)) {
+      genderModifiedQuery = query;
     } else {
-      category = categories_level1;
-      subCategory = categories_level2;
+      const { selectedGender } = this.state;
+      genderModifiedQuery = `${selectedGender} ${query}`;
     }
+
     // if query does include brands
-    if (hit.query.toUpperCase().includes(brand_name[0].value.toUpperCase())) {
-      if (this.checkForValidSuggestion(query, [...resArray, ...arr])) {
-        arr.push({
-          query,
-          filter: [
+    if (query.toUpperCase().includes(brand_name[0].value.toUpperCase())) {
+      if (
+        this.checkForValidSuggestion(genderModifiedQuery, [...resArray, ...arr])
+      ) {
+        this.addSuggestion(
+          genderModifiedQuery,
+          genderModifiedQuery,
+          [
             {
               type: "brand",
               value: brand_name[0].value,
             },
           ],
-          count: brand_name[0].count,
-        });
+          brand_name[0].count,
+          arr
+        );
       }
-      category.forEach((ele) => {
+      categories_level1.forEach((ele) => {
+        const suggestionLabel = `${brand_name[0].value} ${ele.value.replaceAll(
+          "/// ",
+          ""
+        )}`;
+
         if (
-          this.checkForValidSuggestion(
-            brand_name[0].value + " " + ele.value.replaceAll("/// ", ""),
-            [...resArray, ...arr]
-          )
+          this.checkForValidSuggestion(suggestionLabel, [...resArray, ...arr])
         ) {
-          arr.push({
-            query: brand_name[0].value + " " + ele.value.replaceAll("/// ", ""),
-            filter: [
+          this.addSuggestion(
+            suggestionLabel,
+            suggestionLabel,
+            [
               {
                 type: "brand",
                 value: brand_name[0].value,
               },
               {
-                type: "category_level1",
+                type: "categories_level1",
                 value: ele.value,
               },
             ],
-            count: ele.count,
-          });
+            ele.count,
+            arr
+          );
         }
       });
-      subCategory.forEach((ele) => {
-        if (
-          this.checkForValidSuggestion(
-            brand_name[0].value + " " + ele.value.replaceAll("/// ", ""),
-            [...resArray, ...arr]
-          )
-        ) {
-          let val = ele.value.split(" /// ").reverse();
-          arr.push({
-            query: brand_name[0].value + " " + val[0],
-            filter: [
+
+      categories_level2.forEach((ele) => {
+        const val = ele.value.split(" /// ");
+        const testQuery = `${brand_name[0].value} ${[
+          ...val.slice(0, val.length - 2),
+          ...val.slice(val.length - 1),
+        ].join(" ")}`;
+
+        if (this.checkForValidSuggestion(testQuery, [...resArray, ...arr])) {
+          this.addSuggestion(
+            testQuery,
+            testQuery,
+            [
               {
                 type: "brand",
                 value: brand_name[0].value,
               },
               {
-                type: "category_level2",
+                type: "categories_level2",
                 value: ele.value,
               },
             ],
-            count: ele.count,
-          });
+            ele.count,
+            arr
+          );
+        }
+      });
+
+      categories_level3.forEach((ele) => {
+        const val = ele.value.split(" /// ");
+        const formattedQuery = ele.value.replaceAll("/// ", "");
+        const testQuery = `${brand_name[0].value} ${[
+          ...val.slice(
+            0,
+            this.checkForKidsFilterQuery(formattedQuery) ? val.length - 2 : 1
+          ),
+          ...val.slice(val.length - 1),
+        ].join(" ")}`;
+        if (this.checkForValidSuggestion(testQuery, [...resArray, ...arr])) {
+          this.addSuggestion(
+            testQuery,
+            testQuery,
+            [
+              {
+                type: "categories_level3",
+                value: ele.value,
+              },
+            ],
+            ele.count,
+            arr
+          );
         }
       });
     }
     // if query does not include brands
     else {
-      console.log("category if not brands", category);
-      console.log("subcategory if not brands", subCategory);
-      category.forEach((ele) => {
+      categories_level1.forEach((ele) => {
+        const suggestionLabel = ele.value.replaceAll("/// ", "");
+
         if (
-          this.checkForValidSuggestion(ele.value.replaceAll("/// ", ""), [
-            ...resArray,
-            ...arr,
-          ])
+          this.checkForValidSuggestion(suggestionLabel, [...resArray, ...arr])
         ) {
-          arr.push({
-            query: ele.value.replaceAll("/// ", ""),
-            filter: [
+          this.addSuggestion(
+            suggestionLabel,
+            suggestionLabel,
+            [
               {
-                type: "category_level1",
+                type: "categories_level1",
                 value: ele.value,
               },
             ],
-            count: ele.count,
-          });
+            ele.count,
+            arr
+          );
         }
       });
-      subCategory.forEach((item) => {
-        if (
-          this.checkForValidSuggestion(item.value.replaceAll("/// ", ""), [
-            ...resArray,
-            ...arr,
-          ])
-        ) {
-          let val = item.value.split(" /// ").reverse();
-          console.log("val", val);
-          arr.push({
-            query: val[0],
-            filter: [
+
+      categories_level2.forEach((ele) => {
+        const val = ele.value.split(" /// ");
+        const testQuery = `${[
+          ...val.slice(0, val.length - 2),
+          ...val.slice(val.length - 1),
+        ].join(" ")}`;
+
+        if (this.checkForValidSuggestion(testQuery, [...resArray, ...arr])) {
+          this.addSuggestion(
+            testQuery,
+            testQuery,
+            [
               {
-                type: "category_level2",
-                value: item.value,
+                type: "categories_level2",
+                value: ele.value,
               },
             ],
-            count: item.count,
-          });
+            ele.count,
+            arr
+          );
+        }
+      });
+
+      categories_level3.forEach((ele) => {
+        const val = ele.value.split(" /// ");
+        const formattedQuery = ele.value.replaceAll("/// ", "");
+        const testQuery = `${[
+          ...val.slice(
+            0,
+            this.checkForKidsFilterQuery(formattedQuery) ? val.length - 2 : 1
+          ),
+          ...val.slice(val.length - 1),
+        ].join(" ")}`;
+        if (this.checkForValidSuggestion(testQuery, [...resArray, ...arr])) {
+          this.addSuggestion(
+            testQuery,
+            testQuery,
+            [
+              {
+                type: "categories_level3",
+                value: ele.value,
+              },
+            ],
+            ele.count,
+            arr
+          );
         }
       });
       if (
-        this.checkForValidSuggestion(brand_name[0].value + " " + query, [
-          ...resArray,
-          ...arr,
-        ])
+        this.checkForValidSuggestion(
+          `${brand_name[0].value} ${genderModifiedQuery}`,
+          [...resArray, ...arr]
+        )
       ) {
-        console.log("value", brand_name);
-        console.log("query", query);
-        arr.push({
-          query: brand_name[0].value + " " + query,
-          filter: [
+        this.addSuggestion(
+          `${brand_name[0].value} ${genderModifiedQuery}`,
+          `${brand_name[0].value} ${genderModifiedQuery}`,
+          [
             {
               type: "brand",
               value: brand_name[0].value,
             },
           ],
-          count: brand_name[0].count,
-        });
+          brand_name[0].count,
+          arr
+        );
       }
     }
-    if (this.checkForValidSuggestion(query, [...resArray, ...arr])) {
-      arr.unshift({
-        query,
-        count: exact_nb_hits,
-      });
+    if (
+      this.checkForValidSuggestion(`${genderModifiedQuery}`, [
+        ...resArray,
+        ...arr,
+      ])
+    ) {
+      this.addSuggestion(
+        `${genderModifiedQuery}`,
+        `${genderModifiedQuery}`,
+        undefined,
+        exact_nb_hits,
+        arr,
+        "unshift"
+      );
     }
     return arr;
   };
@@ -245,7 +356,10 @@ export default class Home extends React.PureComponent {
   checkForValidSuggestion = (value, arr) => {
     let valid = true;
 
-    if (/\b(?:OUTLET|INFLUENCER|INFLUENCERS)\b/i.test(value)) return false;
+    if (
+      /\b(?:OUTLET|INFLUENCER|INFLUENCERS|NEW IN|BLACK FRIDAY)\b/i.test(value)
+    )
+      return false;
 
     if (
       value.toUpperCase() === this.state.selectedGender.toUpperCase() ||
@@ -293,16 +407,9 @@ export default class Home extends React.PureComponent {
   };
 
   formatQuery = (query) => {
+    const capitalizedQuery = capitalizeFirstLetters(query);
     let avoidFilter = this.state.selectedGender;
-    if (
-      query.toUpperCase().includes("GIRL") ||
-      query.toUpperCase().includes("BOY") ||
-      query.toUpperCase().includes("GIRLS") ||
-      query.toUpperCase().includes("BOYS") ||
-      query.toUpperCase().includes("BABY BOY") ||
-      query.toUpperCase().includes("BABY GIRL")
-    )
-      avoidFilter = "kids";
+    if (this.checkForKidsFilterQuery(capitalizedQuery)) avoidFilter = "kids";
     else if (this.state.selectedGender === "all") return query;
 
     let regex = new RegExp("\\b" + avoidFilter + "\\b", "i");
@@ -312,6 +419,17 @@ export default class Home extends React.PureComponent {
       .replace(/\s+/g, " ");
   };
 
+  checkForKidsFilterQuery(query) {
+    return (
+      query.toUpperCase().includes("KIDS") ||
+      query.toUpperCase().includes("GIRL") ||
+      query.toUpperCase().includes("GIRLS") ||
+      query.toUpperCase().includes("BOY") ||
+      query.toUpperCase().includes("BOYS") ||
+      query.toUpperCase().includes("BABY GIRL") ||
+      query.toUpperCase().includes("BABY BOY")
+    );
+  }
   getHighlightedText(text, highlight) {
     // Split on highlight term and include term into parts, ignore case
     const parts = text.split(new RegExp(`(${highlight})`, "gi"));
@@ -337,25 +455,20 @@ export default class Home extends React.PureComponent {
   // functions
 
   onTextChange = async () => {
-    const { selectedGender } = this.state;
     const defaultHit = {
       query: this.inputRef.current.value,
       count: "-",
     };
-
-    // const hits = await getSuggestions(this.inputRef.current.value);
-    const hits = await getSuggestions(
-      selectedGender === "all"
-        ? this.inputRef.current.value
-        : `${genders[this.state.selectedGender].value} ${
-            this.inputRef.current.value
-          }`
-    );
-    const newHits = hits?.length ? this.createSuggestions(hits) : [defaultHit];
+    const searchQuery = this.inputRef.current.value;
+    const hits = await getSuggestions(searchQuery);
+    const { indexName } = await algoliaSDK.getIndex();
+    const querySuggestions = hits?.length
+      ? this.getCustomQuerySuggestions(hits, indexName)
+      : [defaultHit];
     this.setState(
       {
         query: this.inputRef.current.value,
-        hits: newHits || [],
+        hits: querySuggestions || [],
         // loading: false
       }
       // () => console.log(this.state.hits)

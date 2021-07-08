@@ -5,6 +5,13 @@ import algoliasearch from "algoliasearch/lite";
 import axios from "axios";
 import { queryString } from "../utils/utils";
 
+// stage
+// const APPLICATION_ID = "testingYRFDV96GMU";
+// const API_KEY = "e92425b71fb8567025fd735b21be56e1";
+// const SOURCE_INDEX_API_KEY = "e92425b71fb8567025fd735b21be56e1";
+// export const indexName = "stage_magento_english_products_query_suggestions";
+// export const sourceIndexName = "stage_magento_english_products";
+// prod
 const APPLICATION_ID = "02X7U6O3SI";
 const API_KEY = "1585b8474aaca857f922d1888f76f38e";
 const SOURCE_INDEX_API_KEY = "1c1f24f9c49cbf42d872fcf91746fc21";

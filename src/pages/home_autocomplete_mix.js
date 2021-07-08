@@ -390,7 +390,6 @@ export default class Home extends React.PureComponent {
   render() {
     const { autocompleteState, selectedGender, hits, showSuggestion, query } =
       this.state;
-    console.log("showSuggestion", showSuggestion);
     return (
       <div className="aa-Autocomplete" {...this.autocomplete.getRootProps({})}>
         {Object.values(genders).map(({ label, value }) => (

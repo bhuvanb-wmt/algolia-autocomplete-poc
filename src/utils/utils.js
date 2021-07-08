@@ -17,3 +17,18 @@ export const queryString = (obj) => {
     .map((key) => `${key}=${encodeURIComponent(obj[key])}`)
     .join("&");
 };
+
+const capitalizeFirstLetter = (str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+export const capitalizeFirstLetters = (str) => {
+  const words = str.split(" ");
+  let newStr = "";
+  words.forEach((word) => {
+    newStr += capitalizeFirstLetter(word);
+    newStr += " ";
+  });
+  newStr = newStr.substring(0, newStr.length - 1);
+  return newStr;
+};

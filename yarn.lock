@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@6thstreetdotcom/algolia-sdk@^1.8.3-beta.1":
+"@6thstreetdotcom/algolia-sdk@^1.8.3-beta.3":
   version "1.8.3-beta.3"
   resolved "https://registry.yarnpkg.com/@6thstreetdotcom/algolia-sdk/-/algolia-sdk-1.8.3-beta.3.tgz#a42a3ac5e1128a3ba9bdb520837edfab44fdee56"
   integrity sha512-V/jaRcpL+KIdz9whtatsf/mdRpsJpryBtkkVKjbmwoRlFn5kM3ddvLWRsMW5OhakGXgxPpyTs85GAWQUGMu7WA==
