@@ -7,7 +7,7 @@ import {
   getSuggestions,
   getTopSearches,
   setRecentSearches,
-  sourceIndexName,
+  sourceIndexName
 } from "../lib/Algolia";
 import { capitalizeFirstLetters } from "../utils/utils";
 
@@ -67,7 +67,6 @@ export default class Home extends React.PureComponent {
       arr.push(...this.createCustomQuerySuggestions(hits[i], arr, indexName));
       i++;
     }
-    console.log("final array", arr);
     return arr;
   };
 
@@ -135,7 +134,7 @@ export default class Home extends React.PureComponent {
         },
       },
     } = hit;
-    console.log("single hit", hit);
+    console.log("hit in createCustomQuerySuggestions",hit);
     let genderModifiedQuery;
 
     if (this.checkForQueryWithGender(query)) {
@@ -376,10 +375,13 @@ export default class Home extends React.PureComponent {
         [this.state.selectedGender]: selectedGender,
         ...filters
       } = genders;
+
       Object.keys(filters).forEach((filter) => {
-        let regex = new RegExp("\\b" + filter + "\\b", "i");
-        if (regex.test(value)) {
-          valid = false;
+        if (filter !== "all" && filter !== this.state.selectedGender) {
+          let regex = new RegExp("\\b" + filter + "\\b", "i");
+          if (regex.test(value)) {
+            valid = false;
+          }
         }
       });
     }

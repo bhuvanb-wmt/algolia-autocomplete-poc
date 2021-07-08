@@ -41,7 +41,6 @@ export async function getSuggestions(query) {
     const res = await index.search(query, {
       hitsPerPage: 5,
     });
-    console.log("raw", res.hits);
     return res.hits;
   } catch (e) {
     console.log(e);
